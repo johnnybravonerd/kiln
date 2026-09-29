@@ -1,0 +1,111 @@
+// snake.kn — playable Snake in Kiln (arrow keys / WASD, Esc to quit)
+use gfx
+
+const CELL = 8
+const COLS = 40
+const ROWS = 30
+const TICK_MS = 100
+
+fn main() {
+    gfx.open("Kiln Snake", COLS * CELL, ROWS * CELL, 2)
+    var snake_x: [Int] = [COLS / 2]
+    var snake_y: [Int] = [ROWS / 2]
+    var dir_x = 1
+    var dir_y = 0
+    var food_x = 10
+    var food_y = 10
+    var score = 0
+    var alive = true
+    var acc = 0
+    var last = gfx.time()
+
+    var frames = 0
+    while gfx.running() && alive {
+        frames += 1
+        let lim = env("KILN_GFX_FRAMES")
+        if lim.len > 0 && frames > parse_int(lim) { break }
+        // input
+        if gfx.key_pressed(gfx.KEY_LEFT) || gfx.key_pressed(gfx.KEY_A) {
+            if dir_x != 1 { dir_x = -1; dir_y = 0 }
+        }
+        if gfx.key_pressed(gfx.KEY_RIGHT) || gfx.key_pressed(gfx.KEY_D) {
+            if dir_x != -1 { dir_x = 1; dir_y = 0 }
+        }
+        if gfx.key_pressed(gfx.KEY_UP) || gfx.key_pressed(gfx.KEY_W) {
+            if dir_y != 1 { dir_x = 0; dir_y = -1 }
+        }
+        if gfx.key_pressed(gfx.KEY_DOWN) || gfx.key_pressed(gfx.KEY_S) {
+            if dir_y != -1 { dir_x = 0; dir_y = 1 }
+        }
+        if gfx.key_pressed(gfx.KEY_ESCAPE) { break }
+
+        let now = gfx.time()
+        acc += now - last
+        last = now
+        if acc >= TICK_MS {
+            acc -= TICK_MS
+            // move
+            let hx = snake_x[0] + dir_x
+            let hy = snake_y[0] + dir_y
+            if hx < 0 || hy < 0 || hx >= COLS || hy >= ROWS {
+                alive = false
+            } else {
+                // self collision
+                var i = 0
+                while i < snake_x.len {
+                    if snake_x[i] == hx && snake_y[i] == hy { alive = false }
+                    i += 1
+                }
+            }
+            if alive {
+                // grow at head
+                var nx: [Int] = [hx]
+                var ny: [Int] = [hy]
+                var j = 0
+                while j < snake_x.len {
+                    push(nx, snake_x[j])
+                    push(ny, snake_y[j])
+                    j += 1
+                }
+                if hx == food_x && hy == food_y {
+                    score += 1
+                    food_x = (hx * 17 + score * 13 + 3) % COLS
+                    food_y = (hy * 29 + score * 7 + 5) % ROWS
+                    snake_x = nx
+                    snake_y = ny
+                } else {
+                    // drop tail
+                    var tx: [Int] = []
+                    var ty: [Int] = []
+                    var k = 0
+                    while k < nx.len - 1 {
+                        push(tx, nx[k])
+                        push(ty, ny[k])
+                        k += 1
+                    }
+                    snake_x = tx
+                    snake_y = ty
+                }
+            }
+        }
+
+        // draw
+        gfx.clear(gfx.rgb(10, 12, 20))
+        gfx.rect(food_x * CELL, food_y * CELL, CELL, CELL, gfx.rgb(255, 80, 80))
+        var s = 0
+        while s < snake_x.len {
+            let c = if s == 0 { gfx.rgb(80, 220, 120) } else { gfx.rgb(40, 160, 90) }
+            gfx.rect(snake_x[s] * CELL, snake_y[s] * CELL, CELL - 1, CELL - 1, c)
+            s += 1
+        }
+        gfx.text(4, 4, "SCORE " + str(score), gfx.rgb(200, 200, 220))
+        if !alive {
+            gfx.text(100, 110, "GAME OVER", gfx.rgb(255, 200, 200))
+        }
+        gfx.present()
+        gfx.limit_fps(60)
+
+    }
+    gfx.close()
+    println("snake score={score}")
+}

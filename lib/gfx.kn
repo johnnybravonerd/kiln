@@ -1,0 +1,262 @@
+// Kiln standard graphics library — software renderer + OS window via C shim.
+// Windows: Win32 + StretchDIBits. Linux: X11.
+// The message loop / WndProc lives in runtime/kiln_gfx.c (see that file).
+
+module gfx
+
+@link("kiln_gfx")
+extern fn kgfx_open(title: CStr, w: I32, h: I32, scale: I32) -> I32
+@link("kiln_gfx")
+extern fn kgfx_running() -> I32
+@link("kiln_gfx")
+extern fn kgfx_present(pixels: Ptr, w: I32, h: I32)
+@link("kiln_gfx")
+extern fn kgfx_key_down(key: I32) -> I32
+@link("kiln_gfx")
+extern fn kgfx_key_pressed(key: I32) -> I32
+@link("kiln_gfx")
+extern fn kgfx_time_ms() -> I64
+@link("kiln_gfx")
+extern fn kgfx_sleep_ms(ms: I32)
+@link("kiln_gfx")
+extern fn kgfx_close()
+
+// ---- key constants (match kiln_gfx.c) ----
+pub const KEY_0 = 0
+pub const KEY_1 = 1
+pub const KEY_2 = 2
+pub const KEY_3 = 3
+pub const KEY_4 = 4
+pub const KEY_5 = 5
+pub const KEY_6 = 6
+pub const KEY_7 = 7
+pub const KEY_8 = 8
+pub const KEY_9 = 9
+pub const KEY_A = 10
+pub const KEY_B = 11
+pub const KEY_C = 12
+pub const KEY_D = 13
+pub const KEY_E = 14
+pub const KEY_F = 15
+pub const KEY_G = 16
+pub const KEY_H = 17
+pub const KEY_I = 18
+pub const KEY_J = 19
+pub const KEY_K = 20
+pub const KEY_L = 21
+pub const KEY_M = 22
+pub const KEY_N = 23
+pub const KEY_O = 24
+pub const KEY_P = 25
+pub const KEY_Q = 26
+pub const KEY_R = 27
+pub const KEY_S = 28
+pub const KEY_T = 29
+pub const KEY_U = 30
+pub const KEY_V = 31
+pub const KEY_W = 32
+pub const KEY_X = 33
+pub const KEY_Y = 34
+pub const KEY_Z = 35
+pub const KEY_LEFT = 36
+pub const KEY_RIGHT = 37
+pub const KEY_UP = 38
+pub const KEY_DOWN = 39
+pub const KEY_SPACE = 40
+pub const KEY_ESCAPE = 41
+pub const KEY_ENTER = 42
+pub const KEY_SHIFT = 43
+pub const KEY_CTRL = 44
+pub const KEY_TAB = 45
+
+var _w: Int = 0
+var _h: Int = 0
+var _pixels: [U32] = []
+var _frame_start: Int = 0
+
+pub fn rgb(r: Int, g: Int, b: Int) -> U32 {
+    let R = if r < 0 { 0 } else if r > 255 { 255 } else { r }
+    let G = if g < 0 { 0 } else if g > 255 { 255 } else { g }
+    let B = if b < 0 { 0 } else if b > 255 { 255 } else { b }
+    ((R << 16) | (G << 8) | B) as U32
+}
+
+pub fn open(title: Str, w: Int, h: Int, scale: Int) {
+    _w = w
+    _h = h
+    _pixels = fill(w * h, 0 as U32)
+    let ok = kgfx_open(title, w as I32, h as I32, scale as I32)
+    if ok == 0 {
+        panic("gfx.open failed (no display?)")
+    }
+    _frame_start = time()
+}
+
+pub fn running() -> Bool {
+    kgfx_running() != 0
+}
+
+pub fn clear(color: U32) {
+    var i = 0
+    let n = _w * _h
+    while i < n {
+        _pixels[i] = color
+        i += 1
+    }
+}
+
+pub fn pixel(x: Int, y: Int, color: U32) {
+    if x < 0 || y < 0 || x >= _w || y >= _h { return }
+    _pixels[y * _w + x] = color
+}
+
+pub fn rect(x: Int, y: Int, w: Int, h: Int, color: U32) {
+    var yy = y
+    while yy < y + h {
+        var xx = x
+        while xx < x + w {
+            pixel(xx, yy, color)
+            xx += 1
+        }
+        yy += 1
+    }
+}
+
+pub fn line(x0: Int, y0: Int, x1: Int, y1: Int, color: U32) {
+    var dx = x1 - x0
+    var dy = y1 - y0
+    if dx < 0 { dx = -dx }
+    if dy < 0 { dy = -dy }
+    let sx = if x0 < x1 { 1 } else { -1 }
+    let sy = if y0 < y1 { 1 } else { -1 }
+    var err = dx - dy
+    var x = x0
+    var y = y0
+    loop {
+        pixel(x, y, color)
+        if x == x1 && y == y1 { break }
+        let e2 = 2 * err
+        if e2 > -dy {
+            err -= dy
+            x += sx
+        }
+        if e2 < dx {
+            err += dx
+            y += sy
+        }
+    }
+}
+
+pub fn circle(cx: Int, cy: Int, r: Int, color: U32) {
+    var y = -r
+    while y <= r {
+        var x = -r
+        while x <= r {
+            if x * x + y * y <= r * r {
+                pixel(cx + x, cy + y, color)
+            }
+            x += 1
+        }
+        y += 1
+    }
+}
+
+// 8x8 bitmap font: ASCII 32..126, 8 bytes per glyph (bit7 = leftmost pixel).
+var _font: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 24, 24, 24, 24, 24, 0, 24, 0, 108, 108, 36, 0, 0, 0, 0, 0, 108, 108, 254, 108, 254, 108, 108, 0, 24, 62, 96, 60, 6, 124, 24, 0, 0, 102, 108, 24, 48, 102, 70, 0, 56, 108, 56, 118, 220, 204, 118, 0, 24, 24, 48, 0, 0, 0, 0, 0, 12, 24, 48, 48, 48, 24, 12, 0, 48, 24, 12, 12, 12, 24, 48, 0, 0, 102, 60, 255, 60, 102, 0, 0, 0, 24, 24, 126, 24, 24, 0, 0, 0, 0, 0, 0, 0, 24, 24, 48, 0, 0, 0, 126, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 24, 0, 6, 12, 24, 48, 96, 192, 128, 0, 60, 102, 110, 126, 118, 102, 60, 0, 24, 56, 24, 24, 24, 24, 126, 0, 60, 102, 6, 12, 24, 48, 126, 0, 60, 102, 6, 28, 6, 102, 60, 0, 12, 28, 60, 108, 126, 12, 12, 0, 126, 96, 124, 6, 6, 102, 60, 0, 28, 48, 96, 124, 102, 102, 60, 0, 126, 6, 12, 24, 48, 48, 48, 0, 60, 102, 102, 60, 102, 102, 60, 0, 60, 102, 102, 62, 6, 12, 56, 0, 0, 24, 24, 0, 0, 24, 24, 0, 0, 24, 24, 0, 0, 24, 24, 48, 12, 24, 48, 96, 48, 24, 12, 0, 0, 0, 126, 0, 126, 0, 0, 0, 48, 24, 12, 6, 12, 24, 48, 0, 60, 102, 6, 12, 24, 0, 24, 0, 60, 102, 110, 106, 110, 96, 60, 0, 24, 60, 102, 102, 126, 102, 102, 0, 124, 102, 102, 124, 102, 102, 124, 0, 60, 102, 96, 96, 96, 102, 60, 0, 120, 108, 102, 102, 102, 108, 120, 0, 126, 96, 96, 124, 96, 96, 126, 0, 126, 96, 96, 124, 96, 96, 96, 0, 60, 102, 96, 110, 102, 102, 60, 0, 102, 102, 102, 126, 102, 102, 102, 0, 126, 24, 24, 24, 24, 24, 126, 0, 62, 12, 12, 12, 12, 108, 56, 0, 102, 108, 120, 112, 120, 108, 102, 0, 96, 96, 96, 96, 96, 96, 126, 0, 99, 119, 127, 107, 99, 99, 99, 0, 102, 118, 126, 126, 110, 102, 102, 0, 60, 102, 102, 102, 102, 102, 60, 0, 124, 102, 102, 124, 96, 96, 96, 0, 60, 102, 102, 102, 106, 108, 54, 0, 124, 102, 102, 124, 108, 102, 102, 0, 60, 102, 96, 60, 6, 102, 60, 0, 126, 24, 24, 24, 24, 24, 24, 0, 102, 102, 102, 102, 102, 102, 60, 0, 102, 102, 102, 102, 102, 60, 24, 0, 99, 99, 99, 107, 127, 119, 99, 0, 102, 102, 60, 24, 60, 102, 102, 0, 102, 102, 102, 60, 24, 24, 24, 0, 126, 6, 12, 24, 48, 96, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0, 126, 66, 66, 66, 66, 66, 126, 0]
+
+fn glyph_row(ch: Int, row: Int) -> Int {
+    if row < 0 || row > 7 { return 0 }
+    var c = ch
+    if c >= 97 && c <= 122 { c = c - 32 }  // draw a-z as A-Z
+    if c < 32 || c > 90 {
+        // punctuation and rest: keep if in table range 32..126
+        c = ch
+        if c < 32 || c > 126 { c = 63 }
+    }
+    _font[(c - 32) * 8 + row]
+}
+
+
+fn _char_code(ch: Str) -> Int {
+    // Map one-byte Str to ASCII using a brace-free table + punctuation extras.
+    let upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    let lower = "abcdefghijklmnopqrstuvwxyz"
+    let digits = "0123456789"
+    let i = upper.find(ch)
+    if i >= 0 { return 65 + i }
+    let j = lower.find(ch)
+    if j >= 0 { return 97 + j }
+    let k = digits.find(ch)
+    if k >= 0 { return 48 + k }
+    if ch == " " { return 32 }
+    if ch == ":" { return 58 }
+    if ch == "!" { return 33 }
+    if ch == "-" { return 45 }
+    if ch == "." { return 46 }
+    if ch == "?" { return 63 }
+    if ch == "/" { return 47 }
+    if ch == "+" { return 43 }
+    if ch == "=" { return 61 }
+    if ch == "_" { return 95 }
+    63
+}
+
+pub fn text(x: Int, y: Int, s: Str, color: U32) {
+    var cx = x
+    for ch in s {
+        let code = _char_code(ch)
+        var row = 0
+        while row < 8 {
+            let bits = glyph_row(code, row)
+            var col = 0
+            while col < 8 {
+                if (bits >> (7 - col)) & 1 == 1 {
+                    pixel(cx + col, y + row, color)
+                }
+                col += 1
+            }
+            row += 1
+        }
+        cx += 8
+    }
+}
+
+
+pub fn present() {
+    kgfx_present(_pixels.ptr, _w as I32, _h as I32)
+}
+
+pub fn key_down(key: Int) -> Bool {
+    kgfx_key_down(key as I32) != 0
+}
+
+pub fn key_pressed(key: Int) -> Bool {
+    kgfx_key_pressed(key as I32) != 0
+}
+
+pub fn time() -> Int {
+    kgfx_time_ms() as Int
+}
+
+pub fn sleep_ms(ms: Int) {
+    kgfx_sleep_ms(ms as I32)
+}
+
+// Cap frame rate: call once per frame. target_fps e.g. 60.
+pub fn limit_fps(target_fps: Int) {
+    if target_fps <= 0 { return }
+    let frame_ms = 1000 / target_fps
+    let now = time()
+    let elapsed = now - _frame_start
+    if elapsed < frame_ms {
+        sleep_ms(frame_ms - elapsed)
+    }
+    _frame_start = time()
+}
+
+pub fn width() -> Int { _w }
+pub fn height() -> Int { _h }
+
+pub fn close() {
+    kgfx_close()
+}

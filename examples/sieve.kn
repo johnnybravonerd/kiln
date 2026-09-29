@@ -1,0 +1,37 @@
+// sieve.kn - Sieve of Eratosthenes
+
+fn sieve(n: Int) -> [Bool] {
+    var is_prime = fill(n + 1, true)
+    is_prime[0] = false
+    is_prime[1] = false
+    var i = 2
+    while i * i <= n {
+        if is_prime[i] {
+            var j = i * i
+            while j <= n {
+                is_prime[j] = false
+                j += i
+            }
+        }
+        i += 1
+    }
+    is_prime
+}
+
+fn main() {
+    let n = 100
+    let flags = sieve(n)
+    var primes: [Int] = []
+    for k in 0..=n {
+        if flags[k] { primes.push(k) }
+    }
+    println("primes up to {n}: {primes}")
+    println("count = {primes.len}")
+
+    let big = sieve(1_000_000)
+    var count = 0
+    for f in big {
+        if f { count += 1 }
+    }
+    println("primes below 1,000,000: {count}")
+}

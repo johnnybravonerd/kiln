@@ -1,0 +1,24 @@
+Kiln 0.1.0 - :help for help, :q to quit
+kiln> let xs = [3, 1, 2]
+kiln> xs |> sort
+=> [1, 2, 3]
+kiln> fn sq(x: int) -> int {
+...>     x * x
+...> }
+kiln> :t sq
+sq : fn(Int) -> Int
+kiln> sq(12) + 1
+=> 145
+kiln> _ * 2
+=> 290
+kiln> var total = 0
+kiln> for i in 1..=10 { total += i }
+kiln> total
+=> 55
+kiln> struct P { x: Int, y: Float }
+kiln> let p = P { x: 1, y: 2 }
+kiln> p
+=> P { x: 1, y: 2.0 }
+kiln> if total > 50 { "big" } else { "small" }
+=> "big"
+kiln> :q

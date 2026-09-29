@@ -1,0 +1,1 @@
+2:15: error: argument `x` of `f`: expected `Int` but found `Str`

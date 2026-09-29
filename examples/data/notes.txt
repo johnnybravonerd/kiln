@@ -1,0 +1,2 @@
+Kiln is a statically typed language that compiles to C for speed.
+It aims to be readable like Python.

@@ -1,0 +1,16 @@
+let xs = [3, 1, 2]
+xs |> sort
+fn sq(x: int) -> int {
+    x * x
+}
+:t sq
+sq(12) + 1
+_ * 2
+var total = 0
+for i in 1..=10 { total += i }
+total
+struct P { x: Int, y: Float }
+let p = P { x: 1, y: 2 }
+p
+if total > 50 { "big" } else { "small" }
+:q

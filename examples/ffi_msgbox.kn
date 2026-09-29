@@ -1,0 +1,7 @@
+// ffi_msgbox.kn — Windows MessageBoxA via Kiln FFI (cross-compile / run on Windows)
+@link("user32")
+extern fn MessageBoxA(hwnd: Ptr, text: CStr, title: CStr, flags: U32) -> I32
+
+fn main() {
+    MessageBoxA(null, "Hello from Kiln FFI!", "Kiln", 0 as U32)
+}

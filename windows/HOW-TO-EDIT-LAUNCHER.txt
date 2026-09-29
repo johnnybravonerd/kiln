@@ -1,0 +1,106 @@
+HOW TO EDIT THE KILN LAUNCHER (Kiln.bat)
+========================================
+
+Kiln.bat does two jobs:
+  * double-clicked (no arguments)  -> opens a window running kiln-shell.bat
+  * "kiln <command>" in a prompt  -> runs the compiler (the ":cli" part at the bottom)
+
+Only edit the "launcher mode" block. Right-click Kiln.bat -> "Edit" (or open it in
+Notepad). Lines starting with "rem" are comments. %~dp0 means "the folder Kiln.bat is in"
+(it ends with a backslash, which is why "%~dp0." is used for folder arguments).
+
+The launcher block looks like this:
+
+    where wt >nul 2>nul
+    if not errorlevel 1 (
+        start "" wt -d "%~dp0." --title "Kiln" cmd /k "%~dp0kiln-shell.bat"
+        goto :eof
+    )
+    start "Kiln" /D "%~dp0." cmd /k "%~dp0kiln-shell.bat"
+
+
+1. CHOOSE WHICH WINDOW OPENS
+----------------------------
+a) Windows Terminal (the default when "wt" is installed): leave the file as it is.
+
+b) Always use the classic console (cmd) window: delete the five lines from
+   "where wt" through the closing ")", keeping only:
+       start "Kiln" /D "%~dp0." cmd /k "%~dp0kiln-shell.bat"
+
+c) PowerShell in its own window: replace both "start" lines with:
+       start "Kiln" /D "%~dp0." powershell -NoExit -Command "$env:KILN_SHELL='1'; $env:PATH='%~dp0;'+$env:PATH; & '%~dp0Kiln.bat' repl"
+   (This breaks if the folder path contains an apostrophe ' . Move the folder if it does.)
+
+d) PowerShell inside Windows Terminal:
+       start "" wt -d "%~dp0." -p "Windows PowerShell" powershell -NoExit -Command "$env:KILN_SHELL='1'; $env:PATH='%~dp0;'+$env:PATH; & '%~dp0Kiln.bat' repl"
+
+e) No REPL, just a prompt with "kiln" ready: in kiln-shell.bat delete the line
+       call "%~dp0Kiln.bat" repl
+
+
+2. STARTING FOLDER
+------------------
+The window starts in the Kiln folder. To start somewhere else, e.g. your Documents\kiln:
+  * Windows Terminal: change  -d "%~dp0."      to  -d "%USERPROFILE%\Documents\kiln"
+  * cmd window:       change  /D "%~dp0."      to  /D "%USERPROFILE%\Documents\kiln"
+  * and in kiln-shell.bat change  cd /d "%~dp0"  to  cd /d "%USERPROFILE%\Documents\kiln"
+Keep "%~dp0kiln-shell.bat" as it is: that part locates the helper script.
+
+
+3. MAXIMIZED / MINIMIZED / FULL SCREEN / SIZE
+---------------------------------------------
+  * cmd window:        start "Kiln" /MAX /D ...     or    start "Kiln" /MIN /D ...
+  * Windows Terminal:  start "" wt --maximized -d ...     (or --fullscreen)
+                       wt --size 120,40 ...   sets columns,rows (newer Windows Terminal versions)
+                       wt --pos 100,100 ...   sets the window position
+  * cmd window size:   add a line to kiln-shell.bat after "title Kiln":
+                       mode con: cols=120 lines=40
+
+
+4. WINDOW TITLE
+---------------
+  * Windows Terminal:  --title "My Kiln"
+  * cmd window:        the first quoted text after start:  start "My Kiln" /D ...
+  * Also change the line  title Kiln  in kiln-shell.bat (it runs inside the window).
+
+
+5. COLORS
+---------
+  * cmd window: add a line to kiln-shell.bat after "title Kiln", e.g.
+        color 0A      (black background, green text)
+        color 1F      (blue background, white text)
+    First digit = background, second = text:
+    0 black 1 blue 2 green 3 aqua 4 red 5 purple 6 yellow 7 white 8 gray
+    9 light-blue A light-green B light-aqua C light-red D light-purple E light-yellow F bright-white
+  * Windows Terminal: add options after "wt":
+        --tabColor "#E8590C"          color of the tab
+        --colorScheme "One Half Dark" any scheme listed in Terminal Settings -> Color schemes
+    or add a profile named "Kiln" in Terminal Settings and use  wt -p "Kiln" ...
+
+
+6. DESKTOP SHORTCUT WITH A CUSTOM ICON
+--------------------------------------
+Easy way: double-click  make-desktop-shortcut.bat . It creates "Kiln" on your
+desktop that runs Kiln.bat with the kiln.ico icon.
+
+By hand:
+  1. Right-click Kiln.bat -> "Show more options" -> "Send to" -> "Desktop (create shortcut)".
+  2. Right-click the new desktop shortcut -> Properties.
+  3. "Start in": the Kiln folder.  "Run": Normal / Minimized / Maximized.
+  4. "Change Icon..." -> Browse -> pick kiln.ico from the Kiln folder (or any .ico/.exe/.dll,
+     e.g. C:\Windows\System32\imageres.dll has many built-in icons) -> OK.
+  5. Rename the shortcut if you like (right-click -> Rename).
+  To use your own icon, replace kiln.ico with any .ico file (256x256 works best).
+  Shortcuts do not follow the folder: if you move the Kiln folder, create the shortcut again.
+
+Pin to Start / taskbar: right-click the desktop shortcut -> "Pin to Start".
+(Windows only lets you pin .bat files through a shortcut.)
+
+
+7. IF SOMETHING GOES WRONG
+--------------------------
+  * The window flashes and closes: open a Command Prompt in the Kiln folder and run
+        Kiln.bat version
+    to see the error message.
+  * "Windows protected your PC": click "More info" -> "Run anyway" (the scripts are not signed).
+  * Moving the Kiln folder is fine. Everything uses paths relative to Kiln.bat.

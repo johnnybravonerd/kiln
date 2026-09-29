@@ -1,0 +1,53 @@
+// structs_arrays.kn - user structs, dynamic lists, UFCS, value semantics
+
+struct Point { x: Float, y: Float }
+
+struct Player {
+    name: Str,
+    pos: Point,
+    scores: [Int],
+}
+
+fn dist(a: Point, b: Point) -> Float {
+    let dx = a.x - b.x
+    let dy = a.y - b.y
+    sqrt(dx * dx + dy * dy)
+}
+
+fn total(p: Player) -> Int {
+    var t = 0
+    for s in p.scores { t += s }
+    t
+}
+
+fn main() {
+    let origin = Point { x: 0, y: 0 }          // Int literals become Float
+    var p = Player { name: "ada", pos: Point { x: 3.0, y: 4.0 }, scores: [] }
+    p.scores.push(10)
+    p.scores.push(25)
+    p.scores.push(7)
+    println(p)
+    println("distance from origin: {dist(origin, p.pos):.2f}")
+    println("total score: {p.total()}  (UFCS: p.total() == total(p))")
+
+    // structs are values: copying then changing the copy leaves the original alone
+    var q = p.pos
+    q.x = 100.0
+    println("p.pos.x = {p.pos.x}, q.x = {q.x}")
+
+    // lists of structs
+    var pts: [Point] = []
+    for i in 0..5 {
+        let f = i as Float
+        pts.push(Point { x: f, y: f * f })
+    }
+    pts[2].y = -1.0
+    println("points: {pts.len}, last = {pts[-1]}, pts[2] = {pts[2]}")
+
+    // list helpers
+    let nums = [5, 3, 9, 1, 7]
+    println("sorted {nums |> sort}, reversed {nums.reverse()}, sum {nums.sum()}, max {max(3, 9)}")
+    println("slice {nums[1..3]}, contains 9? {9 in nums}")
+    let words = "the quick brown fox".split(" ")
+    println("{words.len} words, joined: {words.join("-")}")
+}

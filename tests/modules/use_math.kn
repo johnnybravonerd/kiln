@@ -1,0 +1,5 @@
+use mathutil
+
+fn main() {
+    println("d={mathutil.double(21)} sq={mathutil.square(5)} magic={mathutil.MAGIC} bump={mathutil.bump(3)}")
+}

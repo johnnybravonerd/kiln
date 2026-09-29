@@ -1,0 +1,6 @@
+// hello.kn - the classic first program
+fn main() {
+    let name = "Kiln"
+    println("Hello, {name}!")
+    println("1 + 2 = {1 + 2}")
+}

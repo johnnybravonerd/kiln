@@ -1,0 +1,8 @@
+// Benchmark: naive recursive Fibonacci
+fn fib(n: Int) -> Int {
+    if n < 2 { n } else { fib(n - 1) + fib(n - 2) }
+}
+
+fn main() {
+    println("fib(40) = {fib(40)}")
+}

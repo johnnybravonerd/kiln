@@ -1,0 +1,9 @@
+fn main() {
+    let a: U8 = 255
+    let b: I16 = -2
+    let c: U32 = 0x00FF00
+    let d: I32 = 42
+    println("u8={a} i16={b} u32={c} i32={d}")
+    let p: Ptr = null
+    println("null? {p == null}")
+}

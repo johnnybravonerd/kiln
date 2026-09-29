@@ -1,0 +1,9 @@
+toolchain/zig
+toolchain/tcc
+__pycache__/
+*.pyc
+.DS_Store
+*.o
+*.exe
+/out/
+/dist/

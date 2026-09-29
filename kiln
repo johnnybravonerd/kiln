@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Kiln wrapper: forwards all arguments to kiln.py
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY="${KILN_PYTHON:-$(command -v python3 || command -v python)}"
+if [ -z "$PY" ]; then
+  echo "kiln: Python 3 is required but was not found" >&2
+  exit 1
+fi
+exec "$PY" "$DIR/kiln.py" "$@"

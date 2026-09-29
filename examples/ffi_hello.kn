@@ -1,0 +1,19 @@
+// ffi_hello.kn — Foreign Function Interface demo
+// Linux: calls puts(3) from libc (`@link("c")`).
+// Windows MessageBoxA pattern (cross-compile with --target x86_64-windows-gnu):
+//   @link("user32")
+//   extern fn MessageBoxA(hwnd: Ptr, text: CStr, title: CStr, flags: U32) -> I32
+//   MessageBoxA(null, "Hello from Kiln!", "Kiln", 0 as U32)
+
+@link("c")
+extern fn puts(s: CStr) -> I32
+
+fn main() {
+    puts("Hello from Kiln FFI!")
+    let answer: I32 = 42
+    var buf: [U32] = fill(4, 0xFF0000 as U32)
+    buf[1] = 0x00FF00 as U32
+    let p: Ptr = buf.ptr
+    let ok = if p == null { "null" } else { "non-null" }
+    println("I32={answer}  pixel1={buf[1]}  ptr={ok}")
+}

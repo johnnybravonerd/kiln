@@ -1,0 +1,47 @@
+// wordcount.kn - the design document's example, adapted to Kiln 0.1
+//
+// Differences from the design doc version (features not yet implemented):
+//   * no error unions (`T!E`, `try`, `Ok/Err`): a missing file is checked with fs.exists
+//   * no `scope`/`spawn`/channels: files are counted sequentially
+//   * no `defer` / `log.debug`
+module app.wordcount
+
+// fs.* are builtins (not a separate module yet)
+
+@derive(Show, Eq)
+struct Tally { file: str, words: int }
+
+fn count_file(path: str) -> Tally {
+    let text = fs.read_text(path)
+    let words = text |> split_whitespace |> len
+    Tally { file: path, words }
+}
+
+fn main(args: [str]) -> int {
+    guard args.len > 0 else {
+        eprintln("usage: wordcount <file>...")
+        return 1
+    }
+    var total = 0
+    for path in args {
+        if !fs.exists(path) {
+            eprintln("skipped: {path} (not found)")
+            continue
+        }
+        let t = count_file(path)
+        match t.words {
+            0 => eprintln("{t.file}: empty")
+            _ => { total += t.words; println("{t.file:<20} {t.words:>6}") }
+        }
+    }
+    println("total = {total}")
+    0
+}
+
+test "split_whitespace counts words" {
+    assert len(split_whitespace("  one two\tthree\nfour ")) == 4, "expected 4 words"
+}
+
+test "missing file is detected, not a crash" {
+    assert !fs.exists("nope.txt")
+}

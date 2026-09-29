@@ -1,0 +1,7 @@
+// Default builds must panic on an out-of-bounds index; negative indexes are valid in every mode.
+fn main() {
+    let xs = [1, 2, 3]
+    println("last {xs[-1]} slice {xs[-2..3]} str {"kiln"[-1]}")
+    let i = parse_int("7")
+    println(xs[i])
+}

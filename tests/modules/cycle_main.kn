@@ -1,0 +1,2 @@
+use cycle_a
+fn main() { println("nope") }

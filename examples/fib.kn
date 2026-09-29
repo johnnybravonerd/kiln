@@ -1,0 +1,25 @@
+// fib.kn - recursive and iterative Fibonacci
+
+fn fib(n: Int) -> Int {
+    if n < 2 { n } else { fib(n - 1) + fib(n - 2) }   // implicit return
+}
+
+fn fib_iter(n: Int) -> Int {
+    var a = 0
+    var b = 1
+    for _i in 0..n {
+        let t = a + b
+        a = b
+        b = t
+    }
+    return a
+}
+
+fn main() {
+    for i in 0..=15 {
+        print("{fib(i)} ")
+    }
+    println()
+    println("fib(25) = {fib(25)}")
+    println("fib_iter(90) = {fib_iter(90)}")
+}

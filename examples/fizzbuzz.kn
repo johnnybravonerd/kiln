@@ -1,0 +1,16 @@
+// fizzbuzz.kn - match on a computed Int, with string results
+
+fn fizzbuzz(i: Int) -> Str {
+    match i % 15 {
+        0 => "FizzBuzz"
+        3 | 6 | 9 | 12 => "Fizz"
+        5 | 10 => "Buzz"
+        _ => str(i)
+    }
+}
+
+fn main() {
+    for i in 1..=20 {
+        println(fizzbuzz(i))
+    }
+}

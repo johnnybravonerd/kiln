@@ -1,0 +1,35 @@
+// gfx_demo.kn — tour of the Kiln graphics API (software renderer + OS window)
+use gfx
+
+fn main() {
+    gfx.open("Kiln GFX Demo", 320, 200, 2)
+    var t = 0
+    while gfx.running() {
+        if gfx.key_pressed(gfx.KEY_ESCAPE) { break }
+        gfx.clear(gfx.rgb(12, 14, 28))
+        // bouncing ball
+        let bx = 160 + ((t * 3) % 200) - 100
+        var by = 100 + ((t * 2) % 120) - 60
+        if by < 40 { by = 80 - by }
+        gfx.circle(bx, by, 18, gfx.rgb(255, 90, 70))
+        gfx.rect(20, 20, 80, 50, gfx.rgb(60, 140, 255))
+        gfx.line(0, 199, 319, 0, gfx.rgb(255, 220, 80))
+        gfx.text(8, 8, "KILN GFX", gfx.rgb(230, 230, 240))
+        gfx.text(8, 180, "ESC TO QUIT", gfx.rgb(160, 160, 180))
+        // color bars
+        var i = 0
+        while i < 8 {
+            gfx.rect(200 + i * 14, 20, 12, 40, gfx.rgb(i * 30, 255 - i * 20, 100 + i * 15))
+            i += 1
+        }
+        gfx.present()
+        gfx.limit_fps(60)
+        t += 1
+        // auto-quit after ~2s when KILN_GFX_FRAMES is set (for screenshots / CI)
+        let lim = env("KILN_GFX_FRAMES")
+        if lim.len > 0 {
+            if t >= parse_int(lim) { break }
+        }
+    }
+    gfx.close()
+}

@@ -1,0 +1,1 @@
+2:5: error: function `f` must return `Int`, but some path reaches the end

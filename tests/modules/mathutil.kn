@@ -1,0 +1,9 @@
+module mathutil
+
+pub fn double(x: Int) -> Int { x * 2 }
+pub fn square(x: Int) -> Int { x * x }
+pub const MAGIC = 7
+
+fn private_helper(x: Int) -> Int { x + 1 }
+
+pub fn bump(x: Int) -> Int { private_helper(x) }
